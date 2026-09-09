@@ -1,6 +1,9 @@
 package com.tirfy.beats.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDateTime;
 
@@ -13,18 +16,24 @@ public class Participant {
     private Long id;
 
     @Column(name = "participant_code", nullable = false, unique = true, length = 20)
+    @NotBlank
     private String participantCode;
 
     @Column(nullable = false, length = 150)
+    @NotBlank
     private String name;
 
     @Column
+    @Min(1)
+    @Max(120)
     private Integer age;
 
     @Column(length = 20)
+    @NotBlank
     private String gender;
 
     @Column(name = "qr_token", nullable = false, unique = true, length = 100)
+    @NotBlank
     private String qrToken;
 
     @Enumerated(EnumType.STRING)
