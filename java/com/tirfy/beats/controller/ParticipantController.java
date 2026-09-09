@@ -1,6 +1,14 @@
 package com.tirfy.beats.controller;
 
+import org.springframework.web.bind.annotation.RequestParam;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import com.tirfy.beats.service.ParticipantImportService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,9 +33,15 @@ public class ParticipantController {
         this.participantRepository = participantRepository;
     }
     @GetMapping
-    public ResponseEntity<?> getAllParticipants() {
+    public ResponseEntity<?> getAllParticipants(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable =
+                PageRequest.of(page, size, Sort.by("id").ascending());
+
         return ResponseEntity.ok(
-                participantRepository.findAll()
+                participantRepository.findAll(pageable)
         );
     }
     @GetMapping("/{id}")
@@ -39,7 +53,27 @@ public class ParticipantController {
 
     @PostMapping
     public ResponseEntity<?> createParticipant(
-            @RequestBody Participant participant) {
+            @Valid @RequestBody Participant participant) {
+
+        if (participantRepository.existsByParticipantCode(
+                participant.getParticipantCode())) {
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "message",
+                            "Participant code already exists"
+                    ));
+        }
+
+        if (participantRepository.existsByQrToken(
+                participant.getQrToken())) {
+
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "message",
+                            "QR token already exists"
+                    ));
+        }
 
         participant.setStatus(ParticipantStatus.NOT_STARTED);
 
@@ -52,7 +86,7 @@ public class ParticipantController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateParticipant(
             @PathVariable Long id,
-            @RequestBody Participant updatedParticipant) {
+            @Valid @RequestBody Participant updatedParticipant) {
 
         return participantRepository.findById(id)
                 .map(existingParticipant -> {
@@ -90,17 +124,69 @@ public class ParticipantController {
 
                     String statusValue = request.get("status");
 
-                    ParticipantStatus status =
-                            ParticipantStatus.valueOf(statusValue);
+                    ParticipantStatus newStatus;
 
-                    participant.setStatus(status);
+                    try {
+                        newStatus = ParticipantStatus.valueOf(statusValue);
+                    } catch (Exception e) {
+                        return ResponseEntity.badRequest()
+                                .body(Map.of(
+                                        "message",
+                                        "Invalid status: " + statusValue
+                                ));
+                    }
+
+                    ParticipantStatus currentStatus =
+                            participant.getStatus();
+
+                    boolean allowed =
+                            (currentStatus == ParticipantStatus.NOT_STARTED
+                                    && newStatus == ParticipantStatus.ACTIVE)
+                                    ||
+                                    (currentStatus == ParticipantStatus.ACTIVE
+                                            && (newStatus == ParticipantStatus.DROPPED_OUT
+                                            || newStatus == ParticipantStatus.COMPLETED))
+                                    ||
+                                    (currentStatus == ParticipantStatus.DROPPED_OUT
+                                            && newStatus == ParticipantStatus.ACTIVE);
+
+                    if (!allowed) {
+                        return ResponseEntity.badRequest()
+                                .body(Map.of(
+                                        "message",
+                                        "Invalid status transition from "
+                                                + currentStatus
+                                                + " to "
+                                                + newStatus
+                                ));
+                    }
+
+                    participant.setStatus(newStatus);
+
+                    if (newStatus == ParticipantStatus.DROPPED_OUT) {
+                        participant.setDroppedOutAt(java.time.LocalDateTime.now());
+                    }
+
+                    if (newStatus == ParticipantStatus.ACTIVE) {
+                        participant.setDroppedOutAt(null);
+                    }
 
                     Participant savedParticipant =
                             participantRepository.save(participant);
-
                     return ResponseEntity.ok(savedParticipant);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchParticipants(
+            @RequestParam String query) {
+
+        return ResponseEntity.ok(
+                participantRepository
+                        .findByNameContainingIgnoreCaseOrParticipantCodeContainingIgnoreCase(
+                                query, query)
+        );
     }
 
     @PostMapping("/import")
