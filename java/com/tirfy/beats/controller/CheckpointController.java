@@ -74,7 +74,7 @@ public class CheckpointController {
                 .map(existingCheckpoint -> {
 
                     // Check if another checkpoint already uses
-                    // the requested day + sequence
+                    // the requested day + sequences
                     boolean duplicate = checkpointRepository
                             .existsByDayNumberAndSequenceNumber(
                                     updatedCheckpoint.getDayNumber(),
