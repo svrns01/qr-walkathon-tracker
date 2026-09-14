@@ -1,9 +1,12 @@
 package com.tirfy.beats.controller;
 
+import com.tirfy.beats.dto.ScanResponse;
 import com.tirfy.beats.entity.Checkpoint;
 import com.tirfy.beats.repository.CheckpointRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.tirfy.beats.dto.ScanRequest;
+import com.tirfy.beats.service.ScanService;
 
 import java.util.List;
 
@@ -12,9 +15,27 @@ import java.util.List;
 public class CheckpointController {
 
     private final CheckpointRepository checkpointRepository;
+    private final ScanService scanService;
 
-    public CheckpointController(CheckpointRepository checkpointRepository) {
+    public CheckpointController(
+            CheckpointRepository checkpointRepository,
+            ScanService scanService) {
+
         this.checkpointRepository = checkpointRepository;
+        this.scanService = scanService;
+    }
+    @PostMapping("/scan")
+    public ResponseEntity<?> scanParticipant(
+            @RequestBody ScanRequest request) {
+
+        try {
+            ScanResponse scan = scanService.processScan(request);
+            return ResponseEntity.ok(scan);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(e.getMessage());
+        }
     }
 
     // Get all checkpoints
@@ -137,5 +158,4 @@ public class CheckpointController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
-
 }

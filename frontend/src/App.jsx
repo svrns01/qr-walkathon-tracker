@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from "react-router-dom";
 import "./App.css";
 
+import Scanner from "./components/Scanner";
 import Dashboard from "./components/Dashboard";
 import Participants from "./components/Participants";
 import Checkpoints from "./components/Checkpoints";
@@ -49,6 +50,7 @@ function App() {
 
         <main className="main-content">
           <Routes>
+            <Route path="/scanner" element={<Scanner />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/participants" element={<Participants />} />
             <Route path="/checkpoints" element={<Checkpoints />} />

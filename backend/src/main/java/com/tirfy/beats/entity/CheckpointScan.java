@@ -1,7 +1,6 @@
 package com.tirfy.beats.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,11 +15,6 @@ import java.util.UUID;
                 )
         }
 )
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class CheckpointScan {
 
     @Id
@@ -51,6 +45,9 @@ public class CheckpointScan {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    public CheckpointScan() {
+    }
+
     @PrePersist
     protected void onCreate() {
         if (scanUuid == null) {
@@ -58,5 +55,61 @@ public class CheckpointScan {
         }
 
         createdAt = LocalDateTime.now();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public UUID getScanUuid() {
+        return scanUuid;
+    }
+
+    public void setScanUuid(UUID scanUuid) {
+        this.scanUuid = scanUuid;
+    }
+
+    public Participant getParticipant() {
+        return participant;
+    }
+
+    public void setParticipant(Participant participant) {
+        this.participant = participant;
+    }
+
+    public Checkpoint getCheckpoint() {
+        return checkpoint;
+    }
+
+    public void setCheckpoint(Checkpoint checkpoint) {
+        this.checkpoint = checkpoint;
+    }
+
+    public User getVolunteer() {
+        return volunteer;
+    }
+
+    public void setVolunteer(User volunteer) {
+        this.volunteer = volunteer;
+    }
+
+    public LocalDateTime getScannedAt() {
+        return scannedAt;
+    }
+
+    public void setScannedAt(LocalDateTime scannedAt) {
+        this.scannedAt = scannedAt;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }
