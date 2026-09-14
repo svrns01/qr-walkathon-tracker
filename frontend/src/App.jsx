@@ -1,4 +1,9 @@
+import { NavLink, Route, Routes } from "react-router-dom";
 import "./App.css";
+
+import Dashboard from "./components/Dashboard";
+import Participants from "./components/Participants";
+import Checkpoints from "./components/Checkpoints";
 
 function App() {
   return (
@@ -13,23 +18,41 @@ function App() {
       <div className="layout">
         <aside className="sidebar">
           <nav>
-            <button className="nav-button active">
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `nav-button ${isActive ? "active" : ""}`
+              }
+            >
               Dashboard
-            </button>
+            </NavLink>
 
-            <button className="nav-button">
+            <NavLink
+              to="/participants"
+              className={({ isActive }) =>
+                `nav-button ${isActive ? "active" : ""}`
+              }
+            >
               Participants
-            </button>
+            </NavLink>
 
-            <button className="nav-button">
+            <NavLink
+              to="/checkpoints"
+              className={({ isActive }) =>
+                `nav-button ${isActive ? "active" : ""}`
+              }
+            >
               Checkpoints
-            </button>
+            </NavLink>
           </nav>
         </aside>
 
         <main className="main-content">
-          <h2>Dashboard</h2>
-          <p>Welcome to the Yatrika Tracking System.</p>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/participants" element={<Participants />} />
+            <Route path="/checkpoints" element={<Checkpoints />} />
+          </Routes>
         </main>
       </div>
     </div>

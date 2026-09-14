@@ -51,8 +51,11 @@ nav {
 }
 
 .nav-button {
+  display: block;
   border: none;
   background: transparent;
+  text-decoration: none;
+  color: inherit;
   padding: 12px 15px;
   text-align: left;
   font-size: 15px;
@@ -76,4 +79,21 @@ nav {
 
 .main-content h2 {
   margin-top: 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+}
+
+th,
+td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+th {
+  background-color: #f0f0f0;
+  font-weight: bold;
 }
