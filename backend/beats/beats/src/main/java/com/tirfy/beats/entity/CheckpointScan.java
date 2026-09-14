@@ -1,0 +1,62 @@
+package com.tirfy.beats.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(
+        name = "checkpoint_scans",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uq_participant_checkpoint",
+                        columnNames = {"participant_id", "checkpoint_id"}
+                )
+        }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CheckpointScan {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "scan_uuid", nullable = false, unique = true)
+    private UUID scanUuid;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "participant_id", nullable = false)
+    private Participant participant;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "checkpoint_id", nullable = false)
+    private Checkpoint checkpoint;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "volunteer_id", nullable = false)
+    private User volunteer;
+
+    @Column(name = "scanned_at", nullable = false)
+    private LocalDateTime scannedAt;
+
+    @Column(name = "device_id", length = 100)
+    private String deviceId;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (scanUuid == null) {
+            scanUuid = UUID.randomUUID();
+        }
+
+        createdAt = LocalDateTime.now();
+    }
+}
