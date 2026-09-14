@@ -38,7 +38,6 @@ function Scanner() {
             const response = await api.post("/checkpoints/scan", {
               scanUuid: crypto.randomUUID(),
               qrToken: decodedText,
-              checkpointId: 1,
               deviceId: "WEB-DEVICE",
             });
 
