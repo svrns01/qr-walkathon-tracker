@@ -25,9 +25,6 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_checkpoint_id")
-    private Checkpoint assignedCheckpoint;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -47,7 +44,6 @@ public class User {
             String email,
             String passwordHash,
             UserRole role,
-            Checkpoint assignedCheckpoint,
             Boolean isActive,
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {
@@ -57,7 +53,6 @@ public class User {
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
-        this.assignedCheckpoint = assignedCheckpoint;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -113,14 +108,6 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
-    }
-
-    public Checkpoint getAssignedCheckpoint() {
-        return assignedCheckpoint;
-    }
-
-    public void setAssignedCheckpoint(Checkpoint assignedCheckpoint) {
-        this.assignedCheckpoint = assignedCheckpoint;
     }
 
     public Boolean getIsActive() {

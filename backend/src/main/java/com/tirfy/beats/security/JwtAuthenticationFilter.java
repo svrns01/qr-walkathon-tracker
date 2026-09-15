@@ -55,14 +55,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
 
+            if (email == null || role == null || role.isBlank()) {
+                throw new IllegalArgumentException(
+                        "JWT is missing required subject or role claim");
+            }
+
+            String authority = role.startsWith("ROLE_")
+                    ? role
+                    : "ROLE_" + role;
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             email,
                             null,
                             List.of(
-                                    new SimpleGrantedAuthority(
-                                            "ROLE_" + role
-                                    )
+                                    new SimpleGrantedAuthority(authority)
                             )
                     );
 

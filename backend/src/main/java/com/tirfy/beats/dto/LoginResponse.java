@@ -9,7 +9,7 @@ public class LoginResponse {
     private String name;
     private String email;
     private String role;
-    private List<Integer> assignedCheckpointIds;
+    private List<Long> assignedCheckpointIds;
 
     public LoginResponse() {
     }
@@ -20,7 +20,7 @@ public class LoginResponse {
             String name,
             String email,
             String role,
-            List<Integer> assignedCheckpointIds) {
+            List<Long> assignedCheckpointIds) {
 
         this.token = token;
         this.userId = userId;
@@ -50,7 +50,7 @@ public class LoginResponse {
         return role;
     }
 
-    public Long getAssignedCheckpointId() {
-        return assignedCheckpointId;
+    public List<Long> getAssignedCheckpointIds() {
+        return assignedCheckpointIds;
     }
 }

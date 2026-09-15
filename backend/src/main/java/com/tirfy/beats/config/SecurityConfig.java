@@ -3,6 +3,7 @@ package com.tirfy.beats.config;
 import com.tirfy.beats.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,11 +36,23 @@ public class SecurityConfig {
                         .requestMatchers("/api/dashboard/**", "/api/reports/**")
                         .hasAnyRole("ROOT", "ADMIN", "VOLUNTEER", "VIEWER")
 
+                        .requestMatchers(HttpMethod.POST, "/api/users")
+                        .hasRole("ROOT")
+
+                        .requestMatchers(HttpMethod.POST, "/api/users")
+                        .hasRole("ROOT")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/users/{userId}")
+                        .hasRole("ROOT")
+
                         .requestMatchers(
                                 "/api/participants/**",
                                 "/api/checkpoints/**"
                         )
                         .hasAnyRole("ROOT", "ADMIN")
+
+                        .requestMatchers("/api/users/**")
+                        .hasRole("ROOT")
 
                         .anyRequest().authenticated()
                 )

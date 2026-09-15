@@ -7,10 +7,7 @@ import com.tirfy.beats.entity.CheckpointScan;
 import com.tirfy.beats.entity.Participant;
 import com.tirfy.beats.entity.ParticipantStatus;
 import com.tirfy.beats.entity.User;
-import com.tirfy.beats.repository.CheckpointRepository;
-import com.tirfy.beats.repository.CheckpointScanRepository;
-import com.tirfy.beats.repository.ParticipantRepository;
-import com.tirfy.beats.repository.UserRepository;
+import com.tirfy.beats.repository.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -24,17 +21,23 @@ public class ScanService {
     private final CheckpointRepository checkpointRepository;
     private final CheckpointScanRepository checkpointScanRepository;
     private final UserRepository userRepository;
+    private final UserCheckpointAccessRepository
+            userCheckpointAccessRepository;
 
     public ScanService(
             ParticipantRepository participantRepository,
             CheckpointRepository checkpointRepository,
             CheckpointScanRepository checkpointScanRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            UserCheckpointAccessRepository
+                    userCheckpointAccessRepository) {
 
         this.participantRepository = participantRepository;
         this.checkpointRepository = checkpointRepository;
         this.checkpointScanRepository = checkpointScanRepository;
         this.userRepository = userRepository;
+        this.userCheckpointAccessRepository =
+                userCheckpointAccessRepository;
     }
 
     public ScanResponse processScan(ScanRequest request) {
@@ -54,44 +57,54 @@ public class ScanService {
 
         String email = authentication.getName();
 
-        // 2. Find volunteer in database
+        // 2. Find authenticated user
         User volunteer = userRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Authenticated user not found"));
 
-        // 3. Verify volunteer is active
+        // 3. Verify user is active
         if (!Boolean.TRUE.equals(volunteer.getIsActive())) {
             throw new RuntimeException(
                     "Volunteer account is inactive");
         }
 
-        // 4. Verify volunteer has a checkpoint
-        if (volunteer.getAssignedCheckpoint() == null) {
+        // 4. Find requested checkpoint
+        Checkpoint checkpoint =
+                checkpointRepository
+                        .findById(request.getCheckpointId())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Checkpoint not found"));
+
+        // 5. Verify volunteer has access
+        boolean hasAccess =
+                userCheckpointAccessRepository
+                        .existsByUserIdAndCheckpointId(
+                                volunteer.getId(),
+                                checkpoint.getId());
+
+        if (!hasAccess) {
             throw new RuntimeException(
-                    "No checkpoint assigned to volunteer");
+                    "Volunteer is not authorized for this checkpoint");
         }
 
-        // 5. Find participant using QR token
-        Participant participant = participantRepository
-                .findByQrToken(request.getQrToken())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Invalid QR code"));
+        // 6. Find participant using QR token
+        Participant participant =
+                participantRepository
+                        .findByQrToken(request.getQrToken())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Invalid QR code"));
 
-        // 6. Reject dropped-out participant
+        // 7. Reject dropped-out participant
         if (participant.getStatus() ==
                 ParticipantStatus.DROPPED_OUT) {
 
             throw new RuntimeException(
                     "Participant has dropped out");
         }
-
-        // 7. Use the volunteer's assigned checkpoint
-        // instead of trusting the request
-        Checkpoint checkpoint =
-                volunteer.getAssignedCheckpoint();
 
         // 8. Check existing scan
         CheckpointScan scan =

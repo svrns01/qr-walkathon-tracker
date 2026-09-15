@@ -6,6 +6,7 @@ public class ScanRequest {
 
     private UUID scanUuid;
     private String qrToken;
+    private Long checkpointId;
     private String deviceId;
 
     public ScanRequest() {
@@ -25,6 +26,14 @@ public class ScanRequest {
 
     public void setQrToken(String qrToken) {
         this.qrToken = qrToken;
+    }
+
+    public Long getCheckpointId() {
+        return checkpointId;
+    }
+
+    public void setCheckpointId(Long checkpointId) {
+        this.checkpointId = checkpointId;
     }
 
     public String getDeviceId() {
