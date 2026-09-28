@@ -390,7 +390,6 @@ function Participants() {
       </div>
 
       {/* Messages */}
-
       {error && (
         <div className="dashboard-error">
           {error}
@@ -439,7 +438,6 @@ function Participants() {
           </div>
 
           <form onSubmit={handleSubmit}>
-
             <div
               style={{
                 display: "grid",
@@ -599,7 +597,6 @@ function Participants() {
                 Cancel
               </button>
             </div>
-
           </form>
         </div>
       )}
@@ -991,7 +988,6 @@ function Participants() {
         </div>
 
         {/* Pagination */}
-
         {totalPages > 1 && (
           <div
             style={{
