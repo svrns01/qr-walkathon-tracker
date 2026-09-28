@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_URI=$AWS_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/beats-backend
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $ECR_URI
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - cd backend
+      - docker build -t beats-backend:latest .
+      - docker tag beats-backend:latest $ECR_URI:latest
+
+  post_build:
+    commands:
+      - echo Pushing Docker image...
+      - docker push $ECR_URI:latest
+      - echo Build completed on `date`
