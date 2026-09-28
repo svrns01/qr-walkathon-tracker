@@ -35,17 +35,17 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // =========================
-                        // LOGIN
-                        // =========================
+                        // ==========================================
+                        // AUTHENTICATION
+                        // ==========================================
 
                         .requestMatchers("/api/auth/**")
                         .permitAll()
 
 
-                        // =========================
-                        // SCANNER
-                        // =========================
+                        // ==========================================
+                        // QR SCANNER
+                        // ==========================================
 
                         .requestMatchers(
                                 "/api/checkpoints/scan"
@@ -57,9 +57,9 @@ public class SecurityConfig {
                         )
 
 
-                        // =========================
+                        // ==========================================
                         // DASHBOARD / REPORTS
-                        // =========================
+                        // ==========================================
 
                         .requestMatchers(
                                 "/api/dashboard/**",
@@ -73,10 +73,9 @@ public class SecurityConfig {
                         )
 
 
-                        // =========================
+                        // ==========================================
                         // USER MANAGEMENT
-                        // ROOT ONLY
-                        // =========================
+                        // ==========================================
 
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -97,10 +96,9 @@ public class SecurityConfig {
                         .hasRole("ROOT")
 
 
-                        // =========================
-                        // VOLUNTEER CHECKPOINT ACCESS
-                        // ROOT + ADMIN
-                        // =========================
+                        // ==========================================
+                        // USER CHECKPOINT ACCESS
+                        // ==========================================
 
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -108,7 +106,8 @@ public class SecurityConfig {
                         )
                         .hasAnyRole(
                                 "ROOT",
-                                "ADMIN", "VOLUNTEER"
+                                "ADMIN",
+                                "VOLUNTEER"
                         )
 
                         .requestMatchers(
@@ -119,17 +118,30 @@ public class SecurityConfig {
                                 "ROOT",
                                 "ADMIN"
                         )
-                        
-                        .requestMatchers(HttpMethod.POST,"/api/participants/import")
-                        .hasAnyRole("ROOT", "ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/api/participants")
-                        .hasAnyRole("ROOT", "ADMIN", "VOLUNTEER")
 
-                        // =========================
-                        // PARTICIPANTS / CHECKPOINTS
-                        // ROOT + ADMIN
-                        // =========================
+                        // ==========================================
+                        // PARTICIPANTS
+                        // ==========================================
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/participants"
+                        )
+                        .hasAnyRole(
+                                "ROOT",
+                                "ADMIN",
+                                "VOLUNTEER"
+                        )
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/participants/import"
+                        )
+                        .hasAnyRole(
+                                "ROOT",
+                                "ADMIN"
+                        )
 
                         .requestMatchers(
                                 "/api/participants/**",
@@ -139,13 +151,25 @@ public class SecurityConfig {
                                 "ROOT",
                                 "ADMIN"
                         )
-                        .requestMatchers("/api/scans/sync")
-                        .hasAnyRole("ROOT", "ADMIN", "VOLUNTEER")
 
 
-                        // =========================
+                        // ==========================================
+                        // OFFLINE SYNC
+                        // ==========================================
+
+                        .requestMatchers(
+                                "/api/scans/sync"
+                        )
+                        .hasAnyRole(
+                                "ROOT",
+                                "ADMIN",
+                                "VOLUNTEER"
+                        )
+
+
+                        // ==========================================
                         // EVERYTHING ELSE
-                        // =========================
+                        // ==========================================
 
                         .anyRequest()
                         .authenticated()
@@ -160,6 +184,10 @@ public class SecurityConfig {
     }
 
 
+    // ==========================================
+    // CORS
+    // ==========================================
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
@@ -167,7 +195,10 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+                List.of(
+                        "http://localhost:5173",
+                        "https://tirfy142-beats.netlify.app"
+                )
         );
 
         configuration.setAllowedMethods(
@@ -185,6 +216,8 @@ public class SecurityConfig {
                 List.of("*")
         );
 
+        configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
@@ -197,8 +230,13 @@ public class SecurityConfig {
     }
 
 
+    // ==========================================
+    // PASSWORD ENCODER
+    // ==========================================
+
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 }

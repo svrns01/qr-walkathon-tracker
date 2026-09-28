@@ -7,12 +7,18 @@ import com.tirfy.beats.entity.CheckpointScan;
 import com.tirfy.beats.entity.Participant;
 import com.tirfy.beats.entity.ParticipantStatus;
 import com.tirfy.beats.entity.User;
-import com.tirfy.beats.repository.*;
+import com.tirfy.beats.entity.UserRole;
+import com.tirfy.beats.repository.CheckpointRepository;
+import com.tirfy.beats.repository.CheckpointScanRepository;
+import com.tirfy.beats.repository.ParticipantRepository;
+import com.tirfy.beats.repository.UserCheckpointAccessRepository;
+import com.tirfy.beats.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 public class ScanService {
@@ -42,7 +48,10 @@ public class ScanService {
 
     public ScanResponse processScan(ScanRequest request) {
 
-        // 1. Get authenticated user
+        // ==========================================
+        // AUTHENTICATION
+        // ==========================================
+
         Authentication authentication =
                 SecurityContextHolder
                         .getContext()
@@ -57,54 +66,82 @@ public class ScanService {
 
         String email = authentication.getName();
 
-        // 2. Find authenticated user
         User volunteer = userRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Authenticated user not found"));
 
-        // 3. Verify user is active
-        if (!Boolean.TRUE.equals(volunteer.getIsActive())) {
+        // ==========================================
+        // USER ACTIVE CHECK
+        // ==========================================
+
+        if (!Boolean.TRUE.equals(
+                volunteer.getIsActive())) {
+
             throw new RuntimeException(
-                    "Volunteer account is inactive");
+                    "User account is inactive");
         }
 
-        // 4. Find requested checkpoint
+        // ==========================================
+        // CHECKPOINT
+        // ==========================================
+
+        Long checkpointId = Objects.requireNonNull(
+                request.getCheckpointId(),
+                "Checkpoint ID is required");
+
         Checkpoint checkpoint =
                 checkpointRepository
-                        .findById(request.getCheckpointId())
+                        .findById(checkpointId)
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "Checkpoint not found"));
 
-        // 5. Verify volunteer has access
-        boolean hasAccess =
-                userCheckpointAccessRepository
-                        .existsByUserIdAndCheckpointId(
-                                volunteer.getId(),
-                                checkpoint.getId());
+        // ==========================================
+        // CHECKPOINT ACCESS
+        //
+        // ROOT  -> all checkpoints
+        // ADMIN -> all checkpoints
+        // VOLUNTEER -> assigned checkpoints only
+        // ==========================================
 
-        if (!hasAccess) {
-            throw new RuntimeException(
-                    "Volunteer is not authorized for this checkpoint");
+        UserRole userRole =
+                volunteer.getRole();
+
+        if (userRole == UserRole.VOLUNTEER) {
+
+            boolean hasAccess =
+                    userCheckpointAccessRepository
+                            .existsByUserIdAndCheckpointId(
+                                    volunteer.getId(),
+                                    checkpoint.getId());
+
+            if (!hasAccess) {
+
+                throw new RuntimeException(
+                        "Volunteer is not authorized for this checkpoint");
+            }
         }
 
-        // 6. Find participant using QR token
+        // ROOT and ADMIN bypass the checkpoint
+        // access table and can scan at any checkpoint.
+
+        // ==========================================
+        // PARTICIPANT
+        // ==========================================
+
         Participant participant =
                 participantRepository
-                        .findByQrToken(request.getQrToken())
+                        .findByQrToken(
+                                request.getQrToken())
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "Invalid QR code"));
 
-        // 7. Validate participant status
-        if (participant.getStatus() ==
-                ParticipantStatus.NOT_STARTED) {
-
-            throw new RuntimeException(
-                    "Participant has not started yet");
-        }
+        // ==========================================
+        // DROPPED OUT CHECK
+        // ==========================================
 
         if (participant.getStatus() ==
                 ParticipantStatus.DROPPED_OUT) {
@@ -113,21 +150,13 @@ public class ScanService {
                     "Participant has dropped out");
         }
 
-        if (participant.getStatus() ==
-                ParticipantStatus.COMPLETED) {
+        // ==========================================
+        // EXISTING SCAN
+        //
+        // Same participant + same checkpoint
+        // = update existing scan
+        // ==========================================
 
-            throw new RuntimeException(
-                    "Participant has already completed the walkathon");
-        }
-
-        if (participant.getStatus() !=
-                ParticipantStatus.ACTIVE) {
-
-            throw new RuntimeException(
-                    "Participant is not active");
-        }
-
-        // 8. Check existing scan
         CheckpointScan scan =
                 checkpointScanRepository
                         .findByParticipantIdAndCheckpointId(
@@ -135,26 +164,45 @@ public class ScanService {
                                 checkpoint.getId())
                         .orElse(null);
 
-        // 9. Create scan if it doesn't exist
         if (scan == null) {
 
             scan = new CheckpointScan();
 
-            scan.setParticipant(participant);
-            scan.setCheckpoint(checkpoint);
-            scan.setVolunteer(volunteer);
+            scan.setParticipant(
+                    participant);
+
+            scan.setCheckpoint(
+                    checkpoint);
+
+            scan.setVolunteer(
+                    volunteer);
         }
 
-        // 10. Update scan
-        scan.setScanUuid(request.getScanUuid());
-        scan.setScannedAt(LocalDateTime.now());
-        scan.setDeviceId(request.getDeviceId());
+        // ==========================================
+        // UPDATE SCAN
+        // ==========================================
 
-        // 11. Save
+        scan.setScanUuid(
+                request.getScanUuid());
+
+        scan.setScannedAt(
+                LocalDateTime.now());
+
+        scan.setDeviceId(
+                request.getDeviceId());
+
+        // ==========================================
+        // SAVE
+        // ==========================================
+
         CheckpointScan savedScan =
-                checkpointScanRepository.save(scan);
+                checkpointScanRepository.save(
+                        scan);
 
-        // 12. Return response
+        // ==========================================
+        // RESPONSE
+        // ==========================================
+
         return new ScanResponse(
                 savedScan.getId(),
                 savedScan.getScanUuid(),

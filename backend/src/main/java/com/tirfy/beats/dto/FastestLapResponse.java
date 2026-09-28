@@ -1,7 +1,5 @@
 package com.tirfy.beats.dto;
 
-import java.time.Duration;
-
 public class FastestLapResponse {
 
     private Long participantId;
