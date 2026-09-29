@@ -139,17 +139,25 @@ public class ScanService {
                                 new RuntimeException(
                                         "Invalid QR code"));
 
-        // ==========================================
-        // DROPPED OUT CHECK
-        // ==========================================
+// ==========================================
+// PARTICIPANT LIFECYCLE CHECK
+// ==========================================
 
-        if (participant.getStatus() ==
-                ParticipantStatus.DROPPED_OUT) {
-
-            throw new RuntimeException(
-                    "Participant has dropped out");
+        if (participant.getStatus() ==ParticipantStatus.DROPPED_OUT) {
+                throw new RuntimeException("Participant has dropped out");
+        }
+        if (participant.getStatus() ==ParticipantStatus.COMPLETED) {
+                throw new RuntimeException("Participant has already completed the walkathon");
         }
 
+// NOT_STARTED participants can only start
+// at the first checkpoint.
+        if (participant.getStatus() ==ParticipantStatus.NOT_STARTED) {
+                if (checkpoint.getSequenceNumber() != 1) {
+                        throw new RuntimeException("Participant must start at the first checkpoint");
+                }
+                participant.setStatus(ParticipantStatus.ACTIVE);
+        }
         // ==========================================
         // EXISTING SCAN
         //
@@ -190,6 +198,16 @@ public class ScanService {
 
         scan.setDeviceId(
                 request.getDeviceId());
+        
+
+// ==========================================
+// COMPLETE PARTICIPANT AT FINAL CHECKPOINT
+// ==========================================
+
+        if (checkpoint.getSequenceNumber() == 34) {
+                participant.setStatus(ParticipantStatus.COMPLETED);
+        }
+        participantRepository.save(participant);
 
         // ==========================================
         // SAVE
