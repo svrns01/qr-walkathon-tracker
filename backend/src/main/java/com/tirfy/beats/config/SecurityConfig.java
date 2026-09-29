@@ -42,6 +42,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**")
                         .permitAll()
 
+                        // ==========================================
+                        // HEALTH CHECK
+                        // ==========================================
+                        .requestMatchers("/health", "/error")
+                        .permitAll()
 
                         // ==========================================
                         // QR SCANNER

@@ -3,6 +3,7 @@ package com.tirfy.beats.repository;
 import com.tirfy.beats.entity.CheckpointScan;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,5 +22,10 @@ public interface CheckpointScanRepository
 
     List<CheckpointScan> findByParticipantIdOrderByScannedAtAsc(
             Long participantId
+    );
+
+    List<CheckpointScan> findByScannedAtBetween(
+            LocalDateTime start,
+            LocalDateTime end
     );
 }

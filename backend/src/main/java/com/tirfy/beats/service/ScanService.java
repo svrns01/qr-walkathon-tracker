@@ -200,6 +200,16 @@ public class ScanService {
                         scan);
 
         // ==========================================
+        // SNS NOTIFICATION
+        //
+        // The scan has already been successfully
+        // saved before SNS is attempted.
+        //
+        // If SNS fails, the scan remains successful
+        // and is not rolled back.
+        // ==========================================
+
+        // ==========================================
         // RESPONSE
         // ==========================================
 

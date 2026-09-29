@@ -122,7 +122,8 @@ public class DashboardService {
                                 participant.getParticipantCode(),
                                 participant.getName(),
                                 participant.getStatus().name(),
-                                scan.getScannedAt()
+                                scan.getScannedAt(),
+                                participant.getRole()
                         )
                 );
 
@@ -134,7 +135,8 @@ public class DashboardService {
                                 participant.getParticipantCode(),
                                 participant.getName(),
                                 participant.getStatus().name(),
-                                null
+                                null,
+                                participant.getRole()
                         )
                 );
             }
