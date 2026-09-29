@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/api";
 
 function Dashboard() {
@@ -9,6 +9,25 @@ function Dashboard() {
   const [loadingCheckpoints, setLoadingCheckpoints] = useState(true);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
   const [error, setError] = useState("");
+
+  // ==========================================
+  // REACHED FILTER / SEARCH / SORT
+  // ==========================================
+
+  const [reachedRoleFilter, setReachedRoleFilter] = useState("Yatrika");
+  const [reachedSearch, setReachedSearch] = useState("");
+  const [reachedSort, setReachedSort] = useState("NAME_ASC");
+
+  // ==========================================
+  // YET TO REACH FILTER / SEARCH / SORT
+  // ==========================================
+
+  const [yetToReachRoleFilter, setYetToReachRoleFilter] =
+    useState("Yatrika");
+
+  const [yetToReachSearch, setYetToReachSearch] = useState("");
+  const [yetToReachSort, setYetToReachSort] =
+    useState("NAME_ASC");
 
   // ==========================================
   // LOAD CHECKPOINTS
@@ -43,7 +62,6 @@ function Dashboard() {
 
     loadCheckpoints();
   }, []);
-
 
   // ==========================================
   // LOAD DASHBOARD
@@ -83,7 +101,6 @@ function Dashboard() {
 
   }, [selectedCheckpoint]);
 
-
   // ==========================================
   // CHECKPOINT SELECTION
   // ==========================================
@@ -92,6 +109,165 @@ function Dashboard() {
     setSelectedCheckpoint(event.target.value);
   };
 
+  // ==========================================
+  // FILTER / SEARCH / SORT HELPERS
+  // ==========================================
+
+  const matchesRole = (participant, roleFilter) => {
+    if (roleFilter === "All") {
+      return true;
+    }
+
+    return (
+      String(participant.role || "").toLowerCase() ===
+      roleFilter.toLowerCase()
+    );
+  };
+
+  const matchesSearch = (participant, searchTerm) => {
+    const search = searchTerm.trim().toLowerCase();
+
+    if (!search) {
+      return true;
+    }
+
+    const name =
+      String(participant.participantName || "").toLowerCase();
+
+    const code =
+      String(participant.participantCode || "").toLowerCase();
+
+    return (
+      name.includes(search) ||
+      code.includes(search)
+    );
+  };
+
+  const sortParticipants = (participants, sortOption) => {
+    const sorted = [...participants];
+
+    sorted.sort((a, b) => {
+      switch (sortOption) {
+
+        case "NAME_ASC":
+          return String(a.participantName || "")
+            .localeCompare(
+              String(b.participantName || "")
+            );
+
+        case "NAME_DESC":
+          return String(b.participantName || "")
+            .localeCompare(
+              String(a.participantName || "")
+            );
+
+        case "ID_ASC":
+          return String(a.participantCode || "")
+            .localeCompare(
+              String(b.participantCode || ""),
+              undefined,
+              { numeric: true }
+            );
+
+        case "ID_DESC":
+          return String(b.participantCode || "")
+            .localeCompare(
+              String(a.participantCode || ""),
+              undefined,
+              { numeric: true }
+            );
+
+        case "TIME_EARLIEST":
+          if (!a.scannedAt) return 1;
+          if (!b.scannedAt) return -1;
+
+          return (
+            new Date(a.scannedAt) -
+            new Date(b.scannedAt)
+          );
+
+        case "TIME_LATEST":
+          if (!a.scannedAt) return 1;
+          if (!b.scannedAt) return -1;
+
+          return (
+            new Date(b.scannedAt) -
+            new Date(a.scannedAt)
+          );
+
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  };
+
+  // ==========================================
+  // PROCESSED REACHED PARTICIPANTS
+  // ==========================================
+
+  const processedReachedParticipants = useMemo(() => {
+    if (!dashboard) {
+      return [];
+    }
+
+    const filtered =
+      dashboard.reachedParticipants.filter(
+        (participant) =>
+          matchesRole(
+            participant,
+            reachedRoleFilter
+          ) &&
+          matchesSearch(
+            participant,
+            reachedSearch
+          )
+      );
+
+    return sortParticipants(
+      filtered,
+      reachedSort
+    );
+  }, [
+    dashboard,
+    reachedRoleFilter,
+    reachedSearch,
+    reachedSort
+  ]);
+
+  // ==========================================
+  // PROCESSED YET TO REACH PARTICIPANTS
+  // ==========================================
+
+  const processedYetToReachParticipants = useMemo(() => {
+    if (!dashboard) {
+      return [];
+    }
+
+    const filtered =
+      dashboard.yetToReachParticipants.filter(
+        (participant) =>
+          matchesRole(
+            participant,
+            yetToReachRoleFilter
+          ) &&
+          matchesSearch(
+            participant,
+            yetToReachSearch
+          )
+      );
+
+    return sortParticipants(
+      filtered,
+      yetToReachSort
+    );
+  }, [
+    dashboard,
+    yetToReachRoleFilter,
+    yetToReachSearch,
+    yetToReachSort
+  ]);
 
   // ==========================================
   // LOADING
@@ -104,7 +280,6 @@ function Dashboard() {
       </div>
     );
   }
-
 
   // ==========================================
   // UI
@@ -413,17 +588,117 @@ function Dashboard() {
               </div>
 
 
-              {dashboard.reachedParticipants.length === 0 ? (
+              {/* REACHED FILTERS */}
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  marginBottom: "16px",
+                  flexWrap: "wrap"
+                }}
+              >
+
+                <select
+                  value={reachedRoleFilter}
+                  onChange={(event) =>
+                    setReachedRoleFilter(
+                      event.target.value
+                    )
+                  }
+                  className="dashboard-select"
+                  style={{
+                    flex: "1",
+                    minWidth: "120px"
+                  }}
+                >
+                  <option value="Yatrika">
+                    Yatrika
+                  </option>
+
+                  <option value="Volunteer">
+                    Volunteer
+                  </option>
+
+                  <option value="All">
+                    All
+                  </option>
+                </select>
+
+
+                <input
+                  type="text"
+                  value={reachedSearch}
+                  onChange={(event) =>
+                    setReachedSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Search name / ID..."
+                  style={{
+                    flex: "2",
+                    minWidth: "180px",
+                    padding: "10px 12px",
+                    border: "1px solid #ddd",
+                    borderRadius: "8px"
+                  }}
+                />
+
+
+                <select
+                  value={reachedSort}
+                  onChange={(event) =>
+                    setReachedSort(
+                      event.target.value
+                    )
+                  }
+                  className="dashboard-select"
+                  style={{
+                    flex: "1",
+                    minWidth: "160px"
+                  }}
+                >
+
+                  <option value="NAME_ASC">
+                    Name A → Z
+                  </option>
+
+                  <option value="NAME_DESC">
+                    Name Z → A
+                  </option>
+
+                  <option value="ID_ASC">
+                    ID Ascending
+                  </option>
+
+                  <option value="ID_DESC">
+                    ID Descending
+                  </option>
+
+                  <option value="TIME_EARLIEST">
+                    Scan Time Earliest
+                  </option>
+
+                  <option value="TIME_LATEST">
+                    Scan Time Latest
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              {processedReachedParticipants.length === 0 ? (
 
                 <p>
-                  No participants have reached this checkpoint yet.
+                  No participants match the selected filters.
                 </p>
 
               ) : (
 
                 <div className="participant-list">
 
-                  {dashboard.reachedParticipants.map(
+                  {processedReachedParticipants.map(
                     (participant) => (
 
                       <div
@@ -488,17 +763,117 @@ function Dashboard() {
               </div>
 
 
-              {dashboard.yetToReachParticipants.length === 0 ? (
+              {/* YET TO REACH FILTERS */}
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  marginBottom: "16px",
+                  flexWrap: "wrap"
+                }}
+              >
+
+                <select
+                  value={yetToReachRoleFilter}
+                  onChange={(event) =>
+                    setYetToReachRoleFilter(
+                      event.target.value
+                    )
+                  }
+                  className="dashboard-select"
+                  style={{
+                    flex: "1",
+                    minWidth: "120px"
+                  }}
+                >
+                  <option value="Yatrika">
+                    Yatrika
+                  </option>
+
+                  <option value="Volunteer">
+                    Volunteer
+                  </option>
+
+                  <option value="All">
+                    All
+                  </option>
+                </select>
+
+
+                <input
+                  type="text"
+                  value={yetToReachSearch}
+                  onChange={(event) =>
+                    setYetToReachSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Search name / ID..."
+                  style={{
+                    flex: "2",
+                    minWidth: "180px",
+                    padding: "10px 12px",
+                    border: "1px solid #ddd",
+                    borderRadius: "8px"
+                  }}
+                />
+
+
+                <select
+                  value={yetToReachSort}
+                  onChange={(event) =>
+                    setYetToReachSort(
+                      event.target.value
+                    )
+                  }
+                  className="dashboard-select"
+                  style={{
+                    flex: "1",
+                    minWidth: "160px"
+                  }}
+                >
+
+                  <option value="NAME_ASC">
+                    Name A → Z
+                  </option>
+
+                  <option value="NAME_DESC">
+                    Name Z → A
+                  </option>
+
+                  <option value="ID_ASC">
+                    ID Ascending
+                  </option>
+
+                  <option value="ID_DESC">
+                    ID Descending
+                  </option>
+
+                  <option value="TIME_EARLIEST">
+                    Scan Time Earliest
+                  </option>
+
+                  <option value="TIME_LATEST">
+                    Scan Time Latest
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              {processedYetToReachParticipants.length === 0 ? (
 
                 <p>
-                  All active participants have reached this checkpoint.
+                  No participants match the selected filters.
                 </p>
 
               ) : (
 
                 <div className="participant-list">
 
-                  {dashboard.yetToReachParticipants.map(
+                  {processedYetToReachParticipants.map(
                     (participant) => (
 
                       <div
