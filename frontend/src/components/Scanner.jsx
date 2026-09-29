@@ -8,8 +8,10 @@ import SyncStatus from "../components/SyncStatus";
 
 function Scanner() {
   const scannerRef = useRef(null);
+  const statusTimerRef = useRef(null);
 
   const [scanSuccess, setScanSuccess] = useState(false);
+  const [scanFailure, setScanFailure] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
 
@@ -65,6 +67,7 @@ function Scanner() {
                 }
               );
 
+              setScanFailure(false);
               setScanSuccess(true);
 
               setResult(
@@ -73,7 +76,11 @@ function Scanner() {
 
               setError("");
 
-              setTimeout(() => {
+              if (statusTimerRef.current) {
+                clearTimeout(statusTimerRef.current);
+              }
+
+              statusTimerRef.current = setTimeout(() => {
                 setScanSuccess(false);
               }, 3000);
 
@@ -111,6 +118,7 @@ function Scanner() {
               deviceId: "WEB-DEVICE",
             });
 
+            setScanFailure(false);
             setScanSuccess(true);
 
             setResult(
@@ -124,13 +132,19 @@ function Scanner() {
               scan
             );
 
-            setTimeout(() => {
+            if (statusTimerRef.current) {
+              clearTimeout(statusTimerRef.current);
+            }
+
+            statusTimerRef.current = setTimeout(() => {
               setScanSuccess(false);
             }, 3000);
+
           } catch (err) {
             console.error(err);
 
             setScanSuccess(false);
+            setScanFailure(true);
 
             setError(
               err.response?.data ||
@@ -139,6 +153,15 @@ function Scanner() {
             );
 
             setResult("");
+
+            if (statusTimerRef.current) {
+              clearTimeout(statusTimerRef.current);
+            }
+
+            statusTimerRef.current = setTimeout(() => {
+              setScanFailure(false);
+            }, 3000);
+
           } finally {
             scanProcessing = false;
           }
@@ -165,6 +188,10 @@ function Scanner() {
     return () => {
       cancelled = true;
 
+      if (statusTimerRef.current) {
+        clearTimeout(statusTimerRef.current);
+      }
+
       if (scannerStarted) {
         scanner.stop().catch(() => {});
       }
@@ -176,7 +203,7 @@ function Scanner() {
       <h2>QR Scanner</h2>
 
       <SyncStatus />
-      
+
       <p>
         Checkpoint ID: {checkpointId}
       </p>
@@ -185,6 +212,8 @@ function Scanner() {
         Status:{" "}
         {navigator.onLine ? "Online" : "Offline"}
       </p>
+
+      {/* SUCCESS INDICATOR */}
 
       {scanSuccess && (
         <div
@@ -213,19 +242,52 @@ function Scanner() {
         </div>
       )}
 
+      {/* FAILURE INDICATOR */}
+
+      {scanFailure && (
+        <div
+          style={{
+            margin: "20px 0",
+            padding: "20px",
+            backgroundColor: "#f8d7da",
+            border: "3px solid #dc3545",
+            borderRadius: "10px",
+            textAlign: "center",
+            color: "#721c24",
+            fontSize: "24px",
+            fontWeight: "bold",
+          }}
+        >
+          ✕ SCAN FAILED
+
+          <div
+            style={{
+              fontSize: "18px",
+              marginTop: "8px",
+            }}
+          >
+            {error}
+          </div>
+        </div>
+      )}
+
       <div
         id="qr-reader"
         style={{ width: "400px" }}
       />
 
-      {!scanSuccess && result && (
-        <p>{result}</p>
-      )}
+      {!scanSuccess &&
+        !scanFailure &&
+        result && (
+          <p>{result}</p>
+        )}
 
-      {error && <p>{error}</p>}
+      {error &&
+        !scanFailure && (
+          <p>{error}</p>
+        )}
     </div>
   );
 }
-
 
 export default Scanner;
