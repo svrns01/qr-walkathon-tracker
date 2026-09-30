@@ -718,17 +718,18 @@ function Dashboard() {
 
                         </div>
 
-                      <div className="scan-time">
-                        {new Date(participant.scannedAt).toLocaleTimeString("en-IN", {
-                          timeZone: "Asia/Kolkata",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                        })}
+                        <div className="scan-time">
+                          {new Date(participant.scannedAt.endsWith("Z")
+                            ? participant.scannedAt
+                            : `${participant.scannedAt}Z`
+                          ).toLocaleTimeString("en-IN", {
+                            timeZone: "Asia/Kolkata",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          })}
+                        </div>
                       </div>
-
-                      </div>
-
                     )
                   )}
 
