@@ -1,3 +1,4 @@
+//VITE_API_BASE_URL=https://be-7fb222026b0a47f6b24875010c775bad.ecs.ap-south-1.on.aws/api
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
