@@ -9,11 +9,16 @@ import SyncStatus from "../components/SyncStatus";
 function Scanner() {
   const scannerRef = useRef(null);
   const statusTimerRef = useRef(null);
+  const startCameraRef = useRef(null);
+  const scannerStartedRef = useRef(false);
+  const camerasRef = useRef([]);
 
   const [scanSuccess, setScanSuccess] = useState(false);
   const [scanFailure, setScanFailure] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
+  const [cameras, setCameras] = useState([]);
+  const [cameraSwitching, setCameraSwitching] = useState(false);
 
   const [searchParams] = useSearchParams();
   const checkpointId = searchParams.get("checkpointId");
@@ -29,12 +34,12 @@ function Scanner() {
     scannerRef.current = scanner;
 
     let cancelled = false;
-    let scannerStarted = false;
+    scannerStartedRef.current = false;
     let scanProcessing = false;
 
-    scanner
-      .start(
-        { facingMode: "environment" },
+    const startCamera = (cameraConfig) =>
+      scanner.start(
+        cameraConfig,
         {
           fps: 10,
           qrbox: {
@@ -169,14 +174,36 @@ function Scanner() {
         () => {
           // Ignore QR detection errors
         }
-      )
+      );
+
+    startCameraRef.current = startCamera;
+
+    startCamera({ facingMode: "environment" })
       .then(() => {
         if (cancelled) {
           scanner.stop().catch(() => {});
           return;
         }
 
-        scannerStarted = true;
+        scannerStartedRef.current = true;
+
+        /*
+         * List the available cameras so the user can
+         * flip between them. Camera permission has
+         * already been granted at this point.
+         */
+        Html5Qrcode.getCameras()
+          .then((availableCameras) => {
+            if (cancelled || !availableCameras) {
+              return;
+            }
+
+            camerasRef.current = availableCameras;
+            setCameras(availableCameras);
+          })
+          .catch((err) => {
+            console.error("Camera list error:", err);
+          });
       })
       .catch((err) => {
         if (!cancelled) {
@@ -187,16 +214,71 @@ function Scanner() {
 
     return () => {
       cancelled = true;
+      startCameraRef.current = null;
 
       if (statusTimerRef.current) {
         clearTimeout(statusTimerRef.current);
       }
 
-      if (scannerStarted) {
+      if (scannerStartedRef.current) {
+        scannerStartedRef.current = false;
         scanner.stop().catch(() => {});
       }
     };
   }, [checkpointId]);
+
+  const flipCamera = async () => {
+    const scanner = scannerRef.current;
+    const startCamera = startCameraRef.current;
+    const availableCameras = camerasRef.current;
+
+    if (
+      !scanner ||
+      !startCamera ||
+      availableCameras.length < 2 ||
+      cameraSwitching
+    ) {
+      return;
+    }
+
+    setCameraSwitching(true);
+    setError("");
+
+    try {
+      // Find the camera that is currently running.
+      let currentIndex = -1;
+
+      if (scannerStartedRef.current) {
+        const currentDeviceId =
+          scanner.getRunningTrackSettings()?.deviceId;
+
+        currentIndex = availableCameras.findIndex(
+          (camera) => camera.id === currentDeviceId
+        );
+
+        await scanner.stop();
+        scannerStartedRef.current = false;
+      }
+
+      const nextIndex =
+        (currentIndex + 1) % availableCameras.length;
+
+      await startCamera(availableCameras[nextIndex].id);
+
+      // The page was closed while the camera was starting.
+      if (startCameraRef.current !== startCamera) {
+        scanner.stop().catch(() => {});
+        return;
+      }
+
+      scannerStartedRef.current = true;
+    } catch (err) {
+      console.error("Camera switch error:", err);
+      setError("Unable to switch camera.");
+    } finally {
+      setCameraSwitching(false);
+    }
+  };
 
   return (
     <div>
@@ -275,6 +357,25 @@ function Scanner() {
         id="qr-reader"
         style={{ width: "400px" }}
       />
+
+      {cameras.length > 1 && (
+        <button
+          onClick={flipCamera}
+          disabled={cameraSwitching}
+          style={{
+            marginTop: "15px",
+            padding: "12px 20px",
+            fontSize: "16px",
+            cursor: cameraSwitching
+              ? "not-allowed"
+              : "pointer",
+          }}
+        >
+          {cameraSwitching
+            ? "Switching..."
+            : "🔄 Flip Camera"}
+        </button>
+      )}
 
       {!scanSuccess &&
         !scanFailure &&
